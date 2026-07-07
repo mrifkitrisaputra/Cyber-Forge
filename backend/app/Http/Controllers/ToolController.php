@@ -19,6 +19,21 @@ class ToolController extends Controller
         '/^sudo\s+apt-get\s+install\s+[a-zA-Z0-9\-\_\.]+$/i',
     ];
 
+    protected function isWindowsHost(): bool
+    {
+        return PHP_OS_FAMILY === 'Windows';
+    }
+
+    protected function runSystemCommand(string $command, array &$output, int &$exitCode): void
+    {
+        if ($this->isWindowsHost()) {
+            exec('wsl /bin/bash -lc ' . escapeshellarg($command) . ' 2>&1', $output, $exitCode);
+            return;
+        }
+
+        exec($command . ' 2>&1', $output, $exitCode);
+    }
+
     protected function isCommandAllowed(string $command): bool
     {
         foreach ($this->allowedPatterns as $pattern) {
@@ -187,7 +202,7 @@ class ToolController extends Controller
         try {
             $output = [];
             $exitCode = 0;
-            exec("wsl " . escapeshellcmd($command) . " 2>&1", $output, $exitCode);
+            $this->runSystemCommand($command, $output, $exitCode);
 
             if ($exitCode === 0) {
                 return response()->json([
@@ -232,7 +247,7 @@ class ToolController extends Controller
             // Cek apakah tool sudah terinstall
             $checkOutput = [];
             $checkExitCode = 0;
-            exec("wsl dpkg -s {$tool} > /dev/null 2>&1", $checkOutput, $checkExitCode);
+            $this->runSystemCommand("dpkg -s " . escapeshellarg($tool) . " > /dev/null", $checkOutput, $checkExitCode);
 
             if ($checkExitCode === 0) {
                 // Tool sudah terinstall
@@ -259,7 +274,11 @@ class ToolController extends Controller
 
                 $output = [];
                 $exitCode = 0;
-                exec("wsl sudo apt-get update && wsl {$installCommand} 2>&1", $output, $exitCode);
+                if ($this->isWindowsHost()) {
+                    $this->runSystemCommand("sudo apt-get update && {$installCommand}", $output, $exitCode);
+                } else {
+                    $this->runSystemCommand("sudo apt-get update && {$installCommand}", $output, $exitCode);
+                }
 
                 if ($exitCode === 0) {
                     // Update is_installed = true

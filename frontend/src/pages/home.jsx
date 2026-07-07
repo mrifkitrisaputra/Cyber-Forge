@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axiosInstance from "../api/api"; // Sesuaikan path jika perlu
 import { Plus, X } from "lucide-react";
 
-const TerminalTab = ({ active, commands, currentCommand, onCommandChange, onKeyDown, username }) => {
+const TerminalTab = ({ active, commands, currentCommand, onCommandChange, onKeyDown, username, mode }) => {
   const terminalRef = useRef(null);
 
   useEffect(() => {
@@ -26,6 +26,7 @@ const TerminalTab = ({ active, commands, currentCommand, onCommandChange, onKeyD
               <span className="text-gray-400">)-[</span>
               <span className="text-blue-400">~</span>
               <span className="text-gray-400">]</span>
+              <span className="ml-2 text-xs text-gray-500">[{mode} mode]</span>
             </div>
             {/* Footer (Prompt) */}
             <div className="flex items-center">
@@ -51,6 +52,7 @@ const TerminalTab = ({ active, commands, currentCommand, onCommandChange, onKeyD
           <span className="text-gray-400">)-[</span>
           <span className="text-blue-400">~</span>
           <span className="text-gray-400">]</span>
+          <span className="ml-2 text-xs text-gray-500">[{mode} mode]</span>
         </div>
         {/* Footer (Prompt with Input) */}
         <div className="flex items-center">
@@ -83,9 +85,33 @@ const Terminal = () => {
       currentCommand: "",
       history: [],
       historyIndex: -1,
+      mode: "free",
     },
   ]);
   const [activeTab, setActiveTab] = useState(1);
+
+  const baseHelpOutput = (mode) => `Available Commands:
+- help: Display this message
+- clear: Clear screen
+- whoami: Show current user
+- welcome: Welcome message
+- tools: List of available tools
+- tools-page: Open the Tools page
+- mode free: Switch to free terminal mode
+- mode install: Switch to guided install mode
+- exit: Close current tab
+- new-tab: Open a new tab
+- google-dorking: Go to Google Dorking page
+
+Current mode: ${mode}
+
+Mode info:
+- free: bebas ketik command apa saja seperti terminal biasa
+- install: mode bantuan install tool manual dulu sebelum execute`;
+
+  const getWelcomeOutput = (mode) => `<img src='/aset/test.png' class="w-[43rem] py-5" alt='banner'/>
+Type 'help' to see list available commands.
+Current mode: ${mode}`;
 
   // Ambil data user saat komponen mount
   useEffect(() => {
@@ -96,6 +122,7 @@ const Terminal = () => {
         setTabs(prev => {
           const updated = [...prev];
           updated[0].commands[0].command = `welcome ${response.name}`;
+          updated[0].commands[0].output = getWelcomeOutput(updated[0].mode);
           return updated;
         });
       } catch (err) {
@@ -103,6 +130,7 @@ const Terminal = () => {
         setTabs(prev => {
           const updated = [...prev];
           updated[0].commands[0].command = "welcome user";
+          updated[0].commands[0].output = getWelcomeOutput(updated[0].mode);
           return updated;
         });
       }
@@ -161,6 +189,7 @@ const Terminal = () => {
       const updatedTabs = [...tabs];
       const tabIndex = updatedTabs.findIndex((tab) => tab.id === activeTab);
       const currentTab = updatedTabs[tabIndex];
+      const currentMode = currentTab.mode || "free";
 
       // Simpan ke history
       updatedTabs[tabIndex] = {
@@ -180,15 +209,7 @@ const Terminal = () => {
             ...currentTab.commands,
             {
               command: "help",
-              output: `Available Commands:
-- help: Display this message
-- clear: Clear screen
-- whoami: Show current user
-- welcome: Welcome message
-- tools: List of available tools
-- exit: Close current tab
-- new-tab: Open a new tab
-- google-dorking: Go to Google Dorking page`,
+              output: baseHelpOutput(currentMode),
             },
           ];
           break;
@@ -212,10 +233,43 @@ const Terminal = () => {
             ...currentTab.commands,
             {
               command: "welcome",
-              output: `<img src='/aset/test.png' class="w-[43rem] py-5" alt='banner'/>
-Type 'help' to see list available commands.`,
+              output: getWelcomeOutput(currentMode),
             },
           ];
+          break;
+
+        case "tools-page":
+          updatedTabs[tabIndex].commands.push({
+            command: "tools-page",
+            output: "Redirecting to Tools page...",
+          });
+          setTimeout(() => {
+            window.location.href = "/tools";
+          }, 500);
+          break;
+
+        case "mode free":
+          updatedTabs[tabIndex].mode = "free";
+          updatedTabs[tabIndex].commands.push({
+            command: "mode free",
+            output: "Mode switched to free. Kamu bisa ketik command apa saja seperti terminal biasa.",
+          });
+          break;
+
+        case "mode install":
+          updatedTabs[tabIndex].mode = "install";
+          updatedTabs[tabIndex].commands.push({
+            command: "mode install",
+            output: `Mode switched to install.
+
+Flow install tool:
+1. Jalankan 'tools' untuk lihat daftar tool.
+2. Pakai 'tools-page' untuk buka halaman Tools.
+3. Pilih tool lalu install manual sesuai petunjuk.
+4. Setelah status installed, kamu boleh pakai command tool tersebut.
+
+Saat ini kamu berada di mode guided install.`,
+          });
           break;
 
         case "tools":
@@ -240,6 +294,14 @@ Type 'help' to see list available commands.`,
               });
             }
           } catch (err) {
+
+          case "mode":
+            updatedTabs[tabIndex].commands.push({
+              command: "mode",
+              output: `Current mode: ${currentMode}
+  Use 'mode free' atau 'mode install' untuk pindah mode.`,
+            });
+            break;
             updatedTabs[tabIndex].commands.push({
               command: "tools",
               output: "Gagal mengambil daftar tools.",
@@ -261,6 +323,7 @@ Type 'help' to see list available commands.`,
             currentCommand: "",
             history: [],
             historyIndex: -1,
+            mode: currentMode,
           };
           updatedTabs.push(newTab);
           setActiveTab(nextTerminalNumber);
@@ -286,19 +349,27 @@ Type 'help' to see list available commands.`,
           break;
 
         default:
-          
-          try {
-            const res = await axiosInstance.post("/run-command", { command: commandText });
+          if (currentMode === "install") {
+            updatedTabs[tabIndex].commands.push({
+              command: commandText,
+              output: `Mode install aktif.
+Gunakan 'tools-page' untuk buka halaman Tools dan install tool secara manual dulu.
+Setelah selesai, pindah ke mode free dengan 'mode free' untuk jalankan command bebas.`,
+            });
+          } else {
+            try {
+              const res = await axiosInstance.post("/run-command", { command: commandText });
 
-            updatedTabs[tabIndex].commands.push({
-              command: commandText,
-              output: res.data.output || "Tidak ada output.",
-            });
-          } catch (err) {
-            updatedTabs[tabIndex].commands.push({
-              command: commandText,
-              output: err.response?.data?.output || "Gagal menjalankan perintah.",
-            });
+              updatedTabs[tabIndex].commands.push({
+                command: commandText,
+                output: res.data.output || "Tidak ada output.",
+              });
+            } catch (err) {
+              updatedTabs[tabIndex].commands.push({
+                command: commandText,
+                output: err.response?.data?.output || "Gagal menjalankan perintah.",
+              });
+            }
           }
           break;
       }
@@ -397,6 +468,7 @@ Type 'help' to see list available commands.`,
               onCommandChange={updateCommand}
               onKeyDown={handleCommand}
               username={username}
+              mode={tab.mode || "free"}
             />
           ))}
         </div>

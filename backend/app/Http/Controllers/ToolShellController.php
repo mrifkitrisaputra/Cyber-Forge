@@ -7,6 +7,21 @@ use App\Models\Tool;
 
 class ToolShellController extends Controller
 {
+    protected function isWindowsHost(): bool
+    {
+        return PHP_OS_FAMILY === 'Windows';
+    }
+
+    protected function runSystemCommand(string $command, array &$output, int &$exitCode): void
+    {
+        if ($this->isWindowsHost()) {
+            exec('wsl /bin/bash -lc ' . escapeshellarg($command) . ' 2>&1', $output, $exitCode);
+            return;
+        }
+
+        exec($command . ' 2>&1', $output, $exitCode);
+    }
+
     public function runCommand(Request $request)
     {
         // Validasi input
@@ -42,7 +57,7 @@ class ToolShellController extends Controller
             $output = [];
             $exitCode = 0;
 
-            exec("wsl /bin/bash -c \"" . escapeshellcmd($command) . "\" 2>&1", $output, $exitCode);
+            $this->runSystemCommand($command, $output, $exitCode);
 
             if ($exitCode === 0) {
                 return response()->json([
