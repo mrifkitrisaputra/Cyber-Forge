@@ -80,14 +80,14 @@ const Terminal = () => {
         {
           command: "welcome",
           output: `<img src='/aset/test.png' class="w-[43rem] py-5" alt='banner'/>Type 'help' to see list available commands.`,
-          cwd: "~",
+          cwd: null,
         },
       ],
       currentCommand: "",
       history: [],
       historyIndex: -1,
       mode: "free",
-      cwd: "~",
+      cwd: null,
     },
   ]);
   const [activeTab, setActiveTab] = useState(1);
@@ -125,7 +125,7 @@ Current mode: ${mode}`;
           const updated = [...prev];
           updated[0].commands[0].command = `welcome ${response.name}`;
           updated[0].commands[0].output = getWelcomeOutput(updated[0].mode);
-          updated[0].commands[0].cwd = updated[0].cwd || "~";
+          updated[0].commands[0].cwd = updated[0].cwd || null;
           return updated;
         });
       } catch (err) {
@@ -134,7 +134,7 @@ Current mode: ${mode}`;
           const updated = [...prev];
           updated[0].commands[0].command = "welcome user";
           updated[0].commands[0].output = getWelcomeOutput(updated[0].mode);
-          updated[0].commands[0].cwd = updated[0].cwd || "~";
+          updated[0].commands[0].cwd = updated[0].cwd || null;
           return updated;
         });
       }
