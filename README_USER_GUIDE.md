@@ -62,6 +62,13 @@ This project can run on Linux, WSL, or any Docker host with a single command.
 docker compose up --build
 ```
 
+If you want to force a clean rebuild without using any cached layers:
+
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+
 Open the app at `http://localhost:8080`.
 
 The backend stores SQLite data and runtime files in a named Docker volume, so the app can start without manual PHP or Node installation on the host.
@@ -108,6 +115,26 @@ Return to the login page:
 - **Password:** Your password
 
 **Click "Login"** → Welcome to your dashboard!
+
+### Testing Account
+
+If you just want to try the app without creating a new account, use this seeded account after running the database seed:
+
+```bash
+docker compose exec backend php artisan db:seed
+```
+
+| Field | Value |
+|-------|-------|
+| **Username** | `testuser` |
+| **Password** | `TestUser123!` |
+
+There is also a secondary demo account:
+
+| Field | Value |
+|-------|-------|
+| **Username** | `demo` |
+| **Password** | `DemoUser123!` |
 
 ---
 
