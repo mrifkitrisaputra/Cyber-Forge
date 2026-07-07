@@ -92,6 +92,10 @@ const Terminal = () => {
   ]);
   const [activeTab, setActiveTab] = useState(1);
 
+  const getCommandRoot = (commandText) => {
+    return commandText.trim().split(/\s+/)[0]?.toLowerCase() || "";
+  };
+
   const baseHelpOutput = (mode) => `Available Commands:
 - help: Display this message
 - clear: Clear screen
@@ -100,7 +104,7 @@ const Terminal = () => {
 - tools: List of available tools
 - tools-page: Open the Tools page
 - mode free: Switch to free terminal mode
-- mode install: Switch to guided install mode
+- mode restricted: Switch to restricted tool mode
 - exit: Close current tab
 - new-tab: Open a new tab
 - google-dorking: Go to Google Dorking page
@@ -109,21 +113,21 @@ Current mode: ${mode}
 
 Mode info:
 - free: bebas ketik command apa saja seperti terminal biasa
-- install: mode bantuan install tool manual dulu sebelum execute`;
+- restricted: mode terbatas. Hanya command tool yang sudah terinstall yang bisa dijalankan`;
 
   const getWelcomeOutput = (mode) => `<img src='/aset/test.png' class="w-[43rem] py-5" alt='banner'/>
 Type 'help' to see list available commands.
 Current mode: ${mode}`;
 
-  const getInstallFlowOutput = () => `Mode switched to install.
+  const getRestrictedFlowOutput = () => `Mode switched to restricted.
 
-Flow install tool:
+Flow restricted tool mode:
 1. Jalankan 'tools' untuk lihat tools yang sudah terinstall.
 2. Pakai 'tools-page' untuk buka halaman Tools.
 3. Pilih tool lalu install atau check installation dari halaman Tools.
 4. Setelah status installed, balik ke mode free dengan 'mode free'.
 
-Saat mode install aktif, command bebas tidak akan dieksekusi.`;
+Saat mode restricted aktif, hanya command yang diawali nama tool terinstall yang bisa dieksekusi.`;
 
   // Ambil data user saat komponen mount
   useEffect(() => {
@@ -277,11 +281,12 @@ Saat mode install aktif, command bebas tidak akan dieksekusi.`;
           });
           break;
 
+        case "mode restricted":
         case "mode install":
-          updatedTabs[tabIndex].mode = "install";
+          updatedTabs[tabIndex].mode = "restricted";
           updatedTabs[tabIndex].commands.push({
-            command: "mode install",
-            output: getInstallFlowOutput(),
+            command: commandText,
+            output: getRestrictedFlowOutput(),
             cwd: currentDisplayDirectory,
           });
           break;
@@ -322,7 +327,7 @@ Saat mode install aktif, command bebas tidak akan dieksekusi.`;
           updatedTabs[tabIndex].commands.push({
             command: "mode",
             output: `Current mode: ${currentMode}
-Use 'mode free' atau 'mode install' untuk pindah mode.`,
+Use 'mode free' atau 'mode restricted' untuk pindah mode.`,
             cwd: currentDisplayDirectory,
           });
           break;
@@ -370,19 +375,75 @@ Type 'help' to see list available commands.`,
           break;
 
         default:
-          if (currentMode === "install") {
-            updatedTabs[tabIndex].commands.push({
-              command: commandText,
-              output: `Mode install aktif.
-Command ini tidak dieksekusi.
+          if (currentMode === "restricted") {
+            try {
+              const toolsResponse = await axiosInstance.get("/available-tools");
+              const installedTools = Array.isArray(toolsResponse.data?.data) ? toolsResponse.data.data : [];
+              const commandRoot = getCommandRoot(commandText);
+              const isInstalledToolCommand = installedTools.some((tool) => tool.name?.toLowerCase() === commandRoot);
+
+              if (!isInstalledToolCommand) {
+                const installedToolNames = installedTools.length
+                  ? installedTools.map((tool) => tool.name).join(", ")
+                  : "belum ada tool yang terinstall";
+
+                updatedTabs[tabIndex].commands.push({
+                  command: commandText,
+                  output: `Mode restricted aktif.
+Command ini diblok karena bukan command tool yang terinstall.
+
+Tool yang terinstall saat ini: ${installedToolNames}
 
 Lanjutkan flow berikut:
-1. Jalankan 'tools' untuk lihat tool yang sudah terinstall.
-2. Jalankan 'tools-page' untuk buka halaman Tools.
-3. Install atau check installation dari halaman Tools.
-4. Setelah selesai, kembali ke 'mode free' untuk eksekusi command bebas.`,
-              cwd: currentDisplayDirectory,
-            });
+1. Jalankan 'tools-page' untuk buka halaman Tools.
+2. Install atau check installation tool yang kamu butuhkan.
+3. Setelah tool terinstall, jalankan command tool itu di mode restricted.
+4. Kalau mau command shell bebas, pindah ke 'mode free'.`,
+                  cwd: currentDisplayDirectory,
+                });
+              } else {
+                updatedTabs[tabIndex].commands.push({
+                  command: commandText,
+                  output: "Menjalankan command tool di VPS host...",
+                  cwd: currentDisplayDirectory,
+                });
+                setTabs([...updatedTabs]);
+
+                try {
+                  const res = await axiosInstance.post("/run-command", {
+                    command: commandText,
+                    cwd: currentExecutionDirectory,
+                  });
+
+                  const resolvedWorkingDirectory = res.data.working_directory || currentExecutionDirectory || currentDisplayDirectory;
+
+                  updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
+                    command: commandText,
+                    output: [
+                      `Executed on: ${res.data.executed_on || "unknown"}`,
+                      `Exit code: ${res.data.exit_code ?? "unknown"}`,
+                      res.data.output || "Tidak ada output.",
+                    ].join("\n"),
+                    cwd: resolvedWorkingDirectory,
+                  };
+                  updatedTabs[tabIndex].cwd = resolvedWorkingDirectory;
+                } catch (err) {
+                  const resolvedWorkingDirectory = err.response?.data?.working_directory || currentExecutionDirectory || currentDisplayDirectory;
+                  updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
+                    command: commandText,
+                    output: err.response?.data?.output || "Gagal menjalankan perintah.",
+                    cwd: resolvedWorkingDirectory,
+                  };
+                  updatedTabs[tabIndex].cwd = resolvedWorkingDirectory;
+                }
+              }
+            } catch (err) {
+              updatedTabs[tabIndex].commands.push({
+                command: commandText,
+                output: "Gagal memeriksa daftar tools yang terinstall.",
+                cwd: currentDisplayDirectory,
+              });
+            }
           } else {
             updatedTabs[tabIndex].commands.push({
               command: commandText,

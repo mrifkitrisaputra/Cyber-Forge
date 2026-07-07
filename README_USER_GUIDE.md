@@ -77,7 +77,8 @@ When you use the provided Docker Compose setup on a Linux VPS, the terminal feat
 
 Terminal mode behavior:
 - `mode free` runs commands on the VPS host shell.
-- `mode install` is a guided setup flow: open `tools-page`, install or check tools there, then switch back to `mode free`.
+- `mode restricted` is a limited mode: only commands that match installed tool names can run.
+- Use `tools-page` to install or check tools, then keep using the tool commands in restricted mode or switch back to `mode free` for shell commands.
 
 ### 1. Access the Application
 
