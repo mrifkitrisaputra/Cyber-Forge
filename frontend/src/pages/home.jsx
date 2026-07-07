@@ -294,6 +294,12 @@ Saat ini kamu berada di mode guided install.`,
               });
             }
           } catch (err) {
+            updatedTabs[tabIndex].commands.push({
+              command: "tools",
+              output: "Gagal mengambil daftar tools.",
+            });
+          }
+          break;
 
           case "mode":
             updatedTabs[tabIndex].commands.push({
@@ -302,12 +308,6 @@ Saat ini kamu berada di mode guided install.`,
   Use 'mode free' atau 'mode install' untuk pindah mode.`,
             });
             break;
-            updatedTabs[tabIndex].commands.push({
-              command: "tools",
-              output: "Gagal mengambil daftar tools.",
-            });
-          }
-          break;
 
         case "new-tab":
           const nextTerminalNumber = tabs.length + 1;
