@@ -115,6 +115,16 @@ Mode info:
 Type 'help' to see list available commands.
 Current mode: ${mode}`;
 
+  const getInstallFlowOutput = () => `Mode switched to install.
+
+Flow install tool:
+1. Jalankan 'tools' untuk lihat tools yang sudah terinstall.
+2. Pakai 'tools-page' untuk buka halaman Tools.
+3. Pilih tool lalu install atau check installation dari halaman Tools.
+4. Setelah status installed, balik ke mode free dengan 'mode free'.
+
+Saat mode install aktif, command bebas tidak akan dieksekusi.`;
+
   // Ambil data user saat komponen mount
   useEffect(() => {
     const fetchUser = async () => {
@@ -271,16 +281,8 @@ Current mode: ${mode}`;
           updatedTabs[tabIndex].mode = "install";
           updatedTabs[tabIndex].commands.push({
             command: "mode install",
-            output: `Mode switched to install.
-
-Flow install tool:
-1. Jalankan 'tools' untuk lihat daftar tool.
-2. Pakai 'tools-page' untuk buka halaman Tools.
-3. Pilih tool lalu install manual sesuai petunjuk.
-4. Setelah status installed, kamu boleh pakai command tool tersebut.
-
-Saat ini kamu berada di mode guided install.`,
-              cwd: currentDisplayDirectory,
+            output: getInstallFlowOutput(),
+            cwd: currentDisplayDirectory,
           });
           break;
 
@@ -316,14 +318,14 @@ Saat ini kamu berada di mode guided install.`,
           }
           break;
 
-          case "mode":
-            updatedTabs[tabIndex].commands.push({
-              command: "mode",
-              output: `Current mode: ${currentMode}
-  Use 'mode free' atau 'mode install' untuk pindah mode.`,
-              cwd: currentDisplayDirectory,
-            });
-            break;
+        case "mode":
+          updatedTabs[tabIndex].commands.push({
+            command: "mode",
+            output: `Current mode: ${currentMode}
+Use 'mode free' atau 'mode install' untuk pindah mode.`,
+            cwd: currentDisplayDirectory,
+          });
+          break;
 
         case "new-tab":
           const nextTerminalNumber = tabs.length + 1;
@@ -372,8 +374,13 @@ Type 'help' to see list available commands.`,
             updatedTabs[tabIndex].commands.push({
               command: commandText,
               output: `Mode install aktif.
-Gunakan 'tools-page' untuk buka halaman Tools dan install tool secara manual dulu.
-Setelah selesai, pindah ke mode free dengan 'mode free' untuk jalankan command bebas.`,
+Command ini tidak dieksekusi.
+
+Lanjutkan flow berikut:
+1. Jalankan 'tools' untuk lihat tool yang sudah terinstall.
+2. Jalankan 'tools-page' untuk buka halaman Tools.
+3. Install atau check installation dari halaman Tools.
+4. Setelah selesai, kembali ke 'mode free' untuk eksekusi command bebas.`,
               cwd: currentDisplayDirectory,
             });
           } else {

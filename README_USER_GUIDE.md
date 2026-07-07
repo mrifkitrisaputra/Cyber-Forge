@@ -75,6 +75,10 @@ The backend stores SQLite data and runtime files in a named Docker volume, so th
 
 When you use the provided Docker Compose setup on a Linux VPS, the terminal feature is configured to execute commands on the VPS host shell, not just inside the app container. That is what makes free mode behave like a real server terminal.
 
+Terminal mode behavior:
+- `mode free` runs commands on the VPS host shell.
+- `mode install` is a guided setup flow: open `tools-page`, install or check tools there, then switch back to `mode free`.
+
 ### 1. Access the Application
 
 Navigate to your Cyber-Forge instance:
