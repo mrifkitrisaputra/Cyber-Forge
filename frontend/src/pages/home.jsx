@@ -24,7 +24,7 @@ const TerminalTab = ({ active, commands, currentCommand, onCommandChange, onKeyD
               <span className="text-green-400">┌──(</span>
               <span className="text-green-400">{username}@cyberf</span>
               <span className="text-gray-400">)-[</span>
-              <span className="text-blue-400">~</span>
+              <span className="text-blue-400">{cmd.cwd || "~"}</span>
               <span className="text-gray-400">]</span>
               <span className="ml-2 text-xs text-gray-500">[{mode} mode]</span>
             </div>
@@ -50,7 +50,7 @@ const TerminalTab = ({ active, commands, currentCommand, onCommandChange, onKeyD
           <span className="text-green-400">┌──(</span>
           <span className="text-green-400">{username}@cyberf</span>
           <span className="text-gray-400">)-[</span>
-          <span className="text-blue-400">~</span>
+          <span className="text-blue-400">{commands.length > 0 && commands[commands.length - 1].cwd ? commands[commands.length - 1].cwd : "~"}</span>
           <span className="text-gray-400">]</span>
           <span className="ml-2 text-xs text-gray-500">[{mode} mode]</span>
         </div>
@@ -80,12 +80,14 @@ const Terminal = () => {
         {
           command: "welcome",
           output: `<img src='/aset/test.png' class="w-[43rem] py-5" alt='banner'/>Type 'help' to see list available commands.`,
+          cwd: "~",
         },
       ],
       currentCommand: "",
       history: [],
       historyIndex: -1,
       mode: "free",
+      cwd: "~",
     },
   ]);
   const [activeTab, setActiveTab] = useState(1);
@@ -123,6 +125,7 @@ Current mode: ${mode}`;
           const updated = [...prev];
           updated[0].commands[0].command = `welcome ${response.name}`;
           updated[0].commands[0].output = getWelcomeOutput(updated[0].mode);
+          updated[0].commands[0].cwd = updated[0].cwd || "~";
           return updated;
         });
       } catch (err) {
@@ -131,6 +134,7 @@ Current mode: ${mode}`;
           const updated = [...prev];
           updated[0].commands[0].command = "welcome user";
           updated[0].commands[0].output = getWelcomeOutput(updated[0].mode);
+          updated[0].commands[0].cwd = updated[0].cwd || "~";
           return updated;
         });
       }
@@ -190,6 +194,8 @@ Current mode: ${mode}`;
       const tabIndex = updatedTabs.findIndex((tab) => tab.id === activeTab);
       const currentTab = updatedTabs[tabIndex];
       const currentMode = currentTab.mode || "free";
+      const currentDisplayDirectory = currentTab.cwd || "~";
+      const currentExecutionDirectory = currentTab.cwd || "";
 
       // Simpan ke history
       updatedTabs[tabIndex] = {
@@ -210,6 +216,7 @@ Current mode: ${mode}`;
             {
               command: "help",
               output: baseHelpOutput(currentMode),
+              cwd: currentDisplayDirectory,
             },
           ];
           break;
@@ -224,6 +231,7 @@ Current mode: ${mode}`;
             {
               command: "whoami",
               output: `You are ${username}@cyberf. Welcome to the digital world!`,
+              cwd: currentDisplayDirectory,
             },
           ];
           break;
@@ -234,6 +242,7 @@ Current mode: ${mode}`;
             {
               command: "welcome",
               output: getWelcomeOutput(currentMode),
+              cwd: currentDisplayDirectory,
             },
           ];
           break;
@@ -242,6 +251,7 @@ Current mode: ${mode}`;
           updatedTabs[tabIndex].commands.push({
             command: "tools-page",
             output: "Redirecting to Tools page...",
+            cwd: currentDisplayDirectory,
           });
           setTimeout(() => {
             window.location.href = "/tools";
@@ -253,6 +263,7 @@ Current mode: ${mode}`;
           updatedTabs[tabIndex].commands.push({
             command: "mode free",
             output: "Mode switched to free. Kamu bisa ketik command apa saja seperti terminal biasa.",
+            cwd: currentDisplayDirectory,
           });
           break;
 
@@ -269,6 +280,7 @@ Flow install tool:
 4. Setelah status installed, kamu boleh pakai command tool tersebut.
 
 Saat ini kamu berada di mode guided install.`,
+              cwd: currentDisplayDirectory,
           });
           break;
 
@@ -282,6 +294,7 @@ Saat ini kamu berada di mode guided install.`,
               updatedTabs[tabIndex].commands.push({
                 command: "tools",
                 output: "Tidak ada tool yang terinstall.",
+                cwd: currentDisplayDirectory,
               });
             } else {
               const toolsList = installedTools
@@ -291,12 +304,14 @@ Saat ini kamu berada di mode guided install.`,
               updatedTabs[tabIndex].commands.push({
                 command: "tools",
                 output: `Berikut adalah tools yang sudah terinstall:\n${toolsList}\n\nGunakan seperti di CLI biasa.`,
+                cwd: currentDisplayDirectory,
               });
             }
           } catch (err) {
             updatedTabs[tabIndex].commands.push({
               command: "tools",
               output: "Gagal mengambil daftar tools.",
+              cwd: currentDisplayDirectory,
             });
           }
           break;
@@ -306,6 +321,7 @@ Saat ini kamu berada di mode guided install.`,
               command: "mode",
               output: `Current mode: ${currentMode}
   Use 'mode free' atau 'mode install' untuk pindah mode.`,
+              cwd: currentDisplayDirectory,
             });
             break;
 
@@ -318,12 +334,14 @@ Saat ini kamu berada di mode guided install.`,
                 command: `welcome ${username}`,
                 output: `<img src='/aset/test.png' class="w-[43rem] py-5" alt='banner'/>
 Type 'help' to see list available commands.`,
+                cwd: currentTab.cwd || null,
               },
             ],
             currentCommand: "",
             history: [],
             historyIndex: -1,
             mode: currentMode,
+            cwd: currentTab.cwd || null,
           };
           updatedTabs.push(newTab);
           setActiveTab(nextTerminalNumber);
@@ -342,6 +360,7 @@ Type 'help' to see list available commands.`,
           updatedTabs[tabIndex].commands.push({
             command: "google-dorking",
             output: "Redirecting to Google Dorking...",
+            cwd: currentDisplayDirectory,
           });
           setTimeout(() => {
             window.location.href = "/google-dorking";
@@ -355,16 +374,23 @@ Type 'help' to see list available commands.`,
               output: `Mode install aktif.
 Gunakan 'tools-page' untuk buka halaman Tools dan install tool secara manual dulu.
 Setelah selesai, pindah ke mode free dengan 'mode free' untuk jalankan command bebas.`,
+              cwd: currentDisplayDirectory,
             });
           } else {
             updatedTabs[tabIndex].commands.push({
               command: commandText,
               output: "Menjalankan command di VPS host...",
+              cwd: currentDisplayDirectory,
             });
             setTabs([...updatedTabs]);
 
             try {
-              const res = await axiosInstance.post("/run-command", { command: commandText });
+              const res = await axiosInstance.post("/run-command", {
+                command: commandText,
+                cwd: currentExecutionDirectory,
+              });
+
+              const resolvedWorkingDirectory = res.data.working_directory || currentExecutionDirectory || currentDisplayDirectory;
 
               updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
                 command: commandText,
@@ -373,12 +399,17 @@ Setelah selesai, pindah ke mode free dengan 'mode free' untuk jalankan command b
                   `Exit code: ${res.data.exit_code ?? "unknown"}`,
                   res.data.output || "Tidak ada output.",
                 ].join("\n"),
+                cwd: resolvedWorkingDirectory,
               };
+              updatedTabs[tabIndex].cwd = resolvedWorkingDirectory;
             } catch (err) {
+              const resolvedWorkingDirectory = err.response?.data?.working_directory || currentExecutionDirectory || currentDisplayDirectory;
               updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
                 command: commandText,
                 output: err.response?.data?.output || "Gagal menjalankan perintah.",
+                cwd: resolvedWorkingDirectory,
               };
+              updatedTabs[tabIndex].cwd = resolvedWorkingDirectory;
             }
           }
           break;
