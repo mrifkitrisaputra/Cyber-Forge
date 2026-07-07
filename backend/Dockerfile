@@ -5,6 +5,7 @@ WORKDIR /var/www/html
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
+  util-linux \
     libzip-dev \
   && docker-php-ext-install zip bcmath \
   && rm -rf /var/lib/apt/lists/*

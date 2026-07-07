@@ -66,6 +66,8 @@ Open the app at `http://localhost:8080`.
 
 The backend stores SQLite data and runtime files in a named Docker volume, so the app can start without manual PHP or Node installation on the host.
 
+When you use the provided Docker Compose setup on a Linux VPS, the terminal feature is configured to execute commands on the VPS host shell, not just inside the app container. That is what makes free mode behave like a real server terminal.
+
 ### 1. Access the Application
 
 Navigate to your Cyber-Forge instance:

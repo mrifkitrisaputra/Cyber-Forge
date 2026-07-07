@@ -7,6 +7,27 @@ use Illuminate\Http\Request;
 
 class ToolShellController extends Controller
 {
+    protected function isHostMode(): bool
+    {
+        return config('terminal.execution_mode') === 'host';
+    }
+
+    protected function buildHostCommand(string $command): string
+    {
+        $nsenterPath = escapeshellarg((string) config('terminal.host_nsenter_path', '/usr/bin/nsenter'));
+        $hostPid = (int) config('terminal.host_pid', 1);
+        $hostShell = escapeshellarg((string) config('terminal.host_shell', '/bin/bash'));
+        $remoteCommand = escapeshellarg($command);
+
+        return sprintf(
+            '%s -t %d -m -u -i -n -p %s -lc %s',
+            $nsenterPath,
+            $hostPid,
+            $hostShell,
+            $remoteCommand
+        );
+    }
+
     protected function isWindowsHost(): bool
     {
         return PHP_OS_FAMILY === 'Windows';
@@ -14,6 +35,11 @@ class ToolShellController extends Controller
 
     protected function runSystemCommand(string $command, array &$output, int &$exitCode): void
     {
+        if ($this->isHostMode()) {
+            exec($this->buildHostCommand($command) . ' 2>&1', $output, $exitCode);
+            return;
+        }
+
         if ($this->isWindowsHost()) {
             exec('wsl /bin/bash -lc ' . escapeshellarg($command) . ' 2>&1', $output, $exitCode);
             return;

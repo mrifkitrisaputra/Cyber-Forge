@@ -2,10 +2,16 @@ services:
   backend:
     build:
       context: ./backend
+    privileged: true
+    pid: host
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_URL: http://localhost:9003
+      TERMINAL_EXECUTION_MODE: host
+      TERMINAL_HOST_SHELL: /bin/bash
+      TERMINAL_HOST_PID: 1
+      TERMINAL_HOST_NSENTER_PATH: /usr/bin/nsenter
       DB_CONNECTION: sqlite
       DB_DATABASE: /var/www/html/storage/app/database.sqlite
       CACHE_STORE: database
