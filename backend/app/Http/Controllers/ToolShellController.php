@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
-use App\Models\Tool;
 
 class ToolShellController extends Controller
 {
@@ -33,27 +33,7 @@ class ToolShellController extends Controller
             return response()->json(['output' => 'Command kosong']);
         }
 
-        // Ambil nama tool dari command
-        $parts = explode(' ', $command);
-        $toolName = strtolower($parts[0]);
-
-        // Cek apakah tool tersimpan dan sudah terinstall
-        $tool = Tool::where('name', $toolName)->first();
-
-        if (!$tool) {
-            return response()->json([
-                'output' => "Error: Tool '$toolName' tidak dikenali."
-            ]);
-        }
-
-        if (!$tool->is_installed) {
-            return response()->json([
-                'output' => "Error: Tool '$toolName' belum terinstall."
-            ]);
-        }
-
         try {
-            // Jalankan command langsung via shell_exec()
             $output = [];
             $exitCode = 0;
 
@@ -61,15 +41,18 @@ class ToolShellController extends Controller
 
             if ($exitCode === 0) {
                 return response()->json([
+                    'success' => true,
                     'output' => implode("\n", $output)
                 ]);
             } else {
                 return response()->json([
+                    'success' => false,
                     'output' => "Gagal menjalankan perintah '$command':\n" . implode("\n", $output)
                 ], 500);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
+                'success' => false,
                 'output' => "Terjadi kesalahan: " . $e->getMessage()
             ], 500);
         }
