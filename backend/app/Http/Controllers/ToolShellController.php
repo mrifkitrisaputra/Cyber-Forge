@@ -20,7 +20,7 @@ class ToolShellController extends Controller
         $remoteCommand = escapeshellarg($command);
 
         return sprintf(
-            '%s -t %d -m -u -i -n -p %s -lc %s',
+            'timeout 15s %s -t %d -m -u -i -n -p %s -lc %s',
             $nsenterPath,
             $hostPid,
             $hostShell,
@@ -64,21 +64,33 @@ class ToolShellController extends Controller
             $exitCode = 0;
 
             $this->runSystemCommand($command, $output, $exitCode);
+            $normalizedOutput = trim(implode("\n", $output));
+
+            if ($normalizedOutput === '') {
+                $normalizedOutput = $exitCode === 0
+                    ? '(perintah dijalankan, tetapi tidak ada output)'
+                    : '(perintah gagal tanpa output yang bisa dibaca)';
+            }
 
             if ($exitCode === 0) {
                 return response()->json([
                     'success' => true,
-                    'output' => implode("\n", $output)
+                    'executed_on' => $this->isHostMode() ? 'host' : (PHP_OS_FAMILY === 'Windows' ? 'wsl' : 'local'),
+                    'exit_code' => $exitCode,
+                    'output' => $normalizedOutput
                 ]);
             } else {
                 return response()->json([
                     'success' => false,
-                    'output' => "Gagal menjalankan perintah '$command':\n" . implode("\n", $output)
+                    'executed_on' => $this->isHostMode() ? 'host' : (PHP_OS_FAMILY === 'Windows' ? 'wsl' : 'local'),
+                    'exit_code' => $exitCode,
+                    'output' => "Gagal menjalankan perintah '$command':\n" . $normalizedOutput
                 ], 500);
             }
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
+                'executed_on' => $this->isHostMode() ? 'host' : (PHP_OS_FAMILY === 'Windows' ? 'wsl' : 'local'),
                 'output' => "Terjadi kesalahan: " . $e->getMessage()
             ], 500);
         }

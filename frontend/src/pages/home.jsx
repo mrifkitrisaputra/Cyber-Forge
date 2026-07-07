@@ -357,18 +357,28 @@ Gunakan 'tools-page' untuk buka halaman Tools dan install tool secara manual dul
 Setelah selesai, pindah ke mode free dengan 'mode free' untuk jalankan command bebas.`,
             });
           } else {
+            updatedTabs[tabIndex].commands.push({
+              command: commandText,
+              output: "Menjalankan command di VPS host...",
+            });
+            setTabs([...updatedTabs]);
+
             try {
               const res = await axiosInstance.post("/run-command", { command: commandText });
 
-              updatedTabs[tabIndex].commands.push({
+              updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
                 command: commandText,
-                output: res.data.output || "Tidak ada output.",
-              });
+                output: [
+                  `Executed on: ${res.data.executed_on || "unknown"}`,
+                  `Exit code: ${res.data.exit_code ?? "unknown"}`,
+                  res.data.output || "Tidak ada output.",
+                ].join("\n"),
+              };
             } catch (err) {
-              updatedTabs[tabIndex].commands.push({
+              updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
                 command: commandText,
                 output: err.response?.data?.output || "Gagal menjalankan perintah.",
-              });
+              };
             }
           }
           break;
