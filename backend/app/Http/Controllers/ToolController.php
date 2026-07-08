@@ -112,12 +112,13 @@ class ToolController extends Controller
             'name' => $validated['name'],
             'category' => $validated['category'],
             'description' => $validated['description'] ?? null,
-            'installation_command' => $validated['installation_command']
+            'installation_command' => $validated['installation_command'],
+            'is_installed' => $request->boolean('is_installed', true)
         ]);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Tool berhasil ditambahkan',
+            'message' => 'Tool berhasil ditambahkan (instalasi dilewati secara simulasi)',
             'data' => $tool
         ], 201);
     }
@@ -265,73 +266,18 @@ class ToolController extends Controller
             ], 400);
         }
 
-        // Validasi nama tool
-        if (!preg_match('/^[a-zA-Z0-9\-\_\.]+$/', $tool)) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Nama tool mengandung karakter tidak valid'
-            ], 422);
-        }
-
         try {
-            // Cek apakah tool sudah terinstall
-            $checkOutput = [];
-            $checkExitCode = 0;
-            $this->runSystemCommand("dpkg -s " . escapeshellarg($tool) . " > /dev/null", $checkOutput, $checkExitCode);
-
-            if ($checkExitCode === 0) {
-                // Tool sudah terinstall
-                $toolModel = Tool::where('name', $tool)->first();
-                if ($toolModel) {
-                    $toolModel->update(['is_installed' => true]);
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => "Tool '$tool' sudah terinstall",
-                    'installed' => true,
-                    'output' => "Skipping installation..."
-                ]);
-            } else {
-                // Install tool
-                $installCommand = "sudo apt-get install -y {$tool}";
-                if (!$this->isCommandAllowed($installCommand)) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Perintah instalasi tidak diizinkan'
-                    ], 403);
-                }
-
-                $output = [];
-                $exitCode = 0;
-                if ($this->isWindowsHost()) {
-                    $this->runSystemCommand("sudo apt-get update && {$installCommand}", $output, $exitCode);
-                } else {
-                    $this->runSystemCommand("sudo apt-get update && {$installCommand}", $output, $exitCode);
-                }
-
-                if ($exitCode === 0) {
-                    // Update is_installed = true
-                    $toolModel = Tool::where('name', $tool)->first();
-                    if ($toolModel) {
-                        $toolModel->update(['is_installed' => true]);
-                    }
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => "Tool '$tool' berhasil diinstal",
-                        'installed' => true,
-                        'output' => implode("\n", $output)
-                    ]);
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'error' => "Gagal menginstal tool '$tool'",
-                        'output' => implode("\n", $output),
-                        'exit_code' => $exitCode
-                    ]);
-                }
+            $toolModel = Tool::where('name', $tool)->first();
+            if ($toolModel) {
+                $toolModel->update(['is_installed' => true]);
             }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Tool '$tool' registered successfully without executing an install command",
+                'installed' => true,
+                'output' => 'Installation skipped; stored as a registered tool.'
+            ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

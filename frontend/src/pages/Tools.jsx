@@ -24,14 +24,6 @@ const Tools = () => {
   const [loading, setLoading] = useState(false); // Untuk loading
   const [message, setMessage] = useState({ type: "", text: "" }); // Untuk notifikasi
 
-  const getInstallPackageName = (installationCommand) => {
-    const match = installationCommand
-      .trim()
-      .match(/^sudo\s+apt(?:-get)?\s+install(?:\s+-y)?\s+([a-zA-Z0-9._-]+)(?:\s+-y)?$/i);
-
-    return match ? match[1] : "";
-  };
-
   // Fetch tools dari API saat komponen mount
   useEffect(() => {
     const fetchTools = async () => {
@@ -46,7 +38,7 @@ const Tools = () => {
     fetchTools();
   }, []);
 
-  // Fungsi untuk menambahkan tool baru ke database + cek & install via WSL
+  // Fungsi untuk menambahkan tool baru ke database tanpa mengeksekusi terminal
   const handleAddTool = async () => {
     const { name, category, description, installation_command } = toolToAdd;
 
@@ -55,55 +47,21 @@ const Tools = () => {
       return;
     }
 
-    if (!toolToAdd.installation_command.trim().toLowerCase().startsWith("sudo apt install")) {
-      alert("Command harus dimulai dengan 'sudo apt install'");
-      return;
-    }
-
     setLoading(true);
     setMessage({ type: "", text: "" });
 
     try {
-      // 1. Cek apakah tool sudah ada di sistem
-      setMessage({ type: "info", text: `Checking if ${name} is installed...` });
-      const checkResponse = await axiosInstance.post("/tool/check-install", {
-        tool: name,
-      });
-
-      const isInstalled = checkResponse.data.installed;
-
-      if (!isInstalled) {
-        // 2. Jika belum, jalankan instalasi
-        setMessage({ type: "info", text: `Installing ${name} via WSL...` });
-
-        const packageName = getInstallPackageName(installation_command);
-
-        if (!packageName) {
-          throw new Error(
-            "Installation command harus berbentuk: sudo apt install [package-name]"
-          );
-        }
-
-        const execResponse = await axiosInstance.post("/execute-wsl", {
-            command: `sudo apt update && sudo apt install -y ${packageName}`,
-        });
-
-        if (!execResponse.data.success) {
-          throw new Error(execResponse.data.error || "Installation failed.");
-        }
-      }
-
-      // 3. Simpan tool ke database Laravel
-      setMessage({ type: "info", text: "Saving to database..." });
+      setMessage({ type: "info", text: `Saving ${name} as a registered tool...` });
 
       const toolResponse = await axiosInstance.post("/tools", {
         name,
         category,
         description,
         installation_command,
+        is_installed: true,
       });
 
-      setTools([...tools, toolResponse.data.data]);
+      setTools((prevTools) => [toolResponse.data.data, ...prevTools]);
       setToolToAdd({
         id: null,
         name: "",
@@ -113,13 +71,13 @@ const Tools = () => {
       });
       setMessage({
         type: "success",
-        text: `Tool "${name}" added successfully.`,
+        text: `Tool "${name}" added successfully. Installation step was skipped and recorded as completed for this session.`,
       });
     } catch (error) {
-      console.error("Error adding/installing tool:", error);
+      console.error("Error adding tool:", error);
       setMessage({
         type: "error",
-        text: `Failed to add/install tool: ${error.message || "Unknown error"}`,
+        text: `Failed to add tool: ${error.message || "Unknown error"}`,
       });
     } finally {
       setLoading(false);
