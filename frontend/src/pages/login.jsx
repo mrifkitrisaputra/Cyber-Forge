@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +15,12 @@ const Login = () => {
   const navigate = useNavigate();
   const { setIsAuthenticated } = useAuth();
 
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      navigate("/home", { replace: true });
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -30,11 +36,9 @@ const Login = () => {
       const token = res.data;
 
       if (token) {
-        // Store the token (e.g., in localStorage or an auth context)
-        localStorage.setItem("token", token); // Or use a more secure method
-        alert("Login successful!");
+        localStorage.setItem("token", token);
         setIsAuthenticated(true);
-        navigate("/home"); // Redirect to the home page or dashboard
+        navigate("/home", { replace: true });
       } else {
         setError("Login failed: Token not received.");
       }

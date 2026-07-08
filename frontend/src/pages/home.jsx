@@ -218,8 +218,7 @@ Saat mode restricted aktif, hanya command yang diawali nama tool terinstall yang
         historyIndex: -1,
       };
 
-      // Reset input prompt
-      updatedTabs[tabIndex].currentCommand = "";
+      // Keep the executed command visible in the prompt while output is rendered.
       setTabs([...updatedTabs]);
 
       // --- COMMAND HANDLER ---

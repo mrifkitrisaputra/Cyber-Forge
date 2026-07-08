@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./component/layout";
 import Homepage from "./pages/home";
 import Login from "./pages/login";
@@ -9,12 +9,17 @@ import Tools from "./pages/Tools";
 import GoogleDorking from "./pages/google-dorking";
 import { AuthProvider, ProtectedRoute } from "./context/authContext";
 
+const RootRedirect = () => {
+  const token = localStorage.getItem("token");
+  return token ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />;
+};
+
 const App = () => {
   return (
     <Router>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
