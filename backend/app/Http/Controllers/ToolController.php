@@ -33,11 +33,15 @@ class ToolController extends Controller
     // Daftar pola perintah yang diizinkan (whitelist)
     protected $allowedPatterns = [
         '/^sudo\s+apt\s+install\s+[a-zA-Z0-9\-\_\.]+$/i',
+        '/^sudo\s+apt\s+install\s+[a-zA-Z0-9\-\_\.]+\s+-y$/i',
         '/^apt\s+update$/i',
         '/^apt\s+upgrade(\s+-y)?$/i',
         '/^apt\s+remove\s+[a-zA-Z0-9\-\_\.]+$/i',
         '/^apt\s+purge\s+[a-zA-Z0-9\-\_\.]+$/i',
         '/^sudo\s+apt-get\s+install\s+[a-zA-Z0-9\-\_\.]+$/i',
+        '/^sudo\s+apt-get\s+install\s+-y\s+[a-zA-Z0-9\-\_\.]+$/i',
+        '/^sudo\s+apt\s+update\s*&&\s*sudo\s+apt\s+install\s+[a-zA-Z0-9\-\_\.]+\s+-y$/i',
+        '/^sudo\s+apt\s+update\s*&&\s*sudo\s+apt-get\s+install\s+-y\s+[a-zA-Z0-9\-\_\.]+$/i',
     ];
 
     protected function isWindowsHost(): bool

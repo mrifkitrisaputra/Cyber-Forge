@@ -24,6 +24,14 @@ const Tools = () => {
   const [loading, setLoading] = useState(false); // Untuk loading
   const [message, setMessage] = useState({ type: "", text: "" }); // Untuk notifikasi
 
+  const getInstallPackageName = (installationCommand) => {
+    const match = installationCommand
+      .trim()
+      .match(/^sudo\s+apt(?:-get)?\s+install(?:\s+-y)?\s+([a-zA-Z0-9._-]+)(?:\s+-y)?$/i);
+
+    return match ? match[1] : "";
+  };
+
   // Fetch tools dari API saat komponen mount
   useEffect(() => {
     const fetchTools = async () => {
@@ -47,7 +55,7 @@ const Tools = () => {
       return;
     }
 
-    if (!toolToAdd.installation_command.includes("sudo apt install")) {
+    if (!toolToAdd.installation_command.trim().toLowerCase().startsWith("sudo apt install")) {
       alert("Command harus dimulai dengan 'sudo apt install'");
       return;
     }
@@ -68,8 +76,16 @@ const Tools = () => {
         // 2. Jika belum, jalankan instalasi
         setMessage({ type: "info", text: `Installing ${name} via WSL...` });
 
+        const packageName = getInstallPackageName(installation_command);
+
+        if (!packageName) {
+          throw new Error(
+            "Installation command harus berbentuk: sudo apt install [package-name]"
+          );
+        }
+
         const execResponse = await axiosInstance.post("/execute-wsl", {
-          command: "sudo apt update && " + installation_command + " -y",
+            command: `sudo apt update && sudo apt install -y ${packageName}`,
         });
 
         if (!execResponse.data.success) {
