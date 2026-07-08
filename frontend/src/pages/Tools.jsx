@@ -24,6 +24,16 @@ const Tools = () => {
   const [loading, setLoading] = useState(false); // Untuk loading
   const [message, setMessage] = useState({ type: "", text: "" }); // Untuk notifikasi
 
+  useEffect(() => {
+    if (!message.text) return;
+
+    const timer = window.setTimeout(() => {
+      setMessage({ type: "", text: "" });
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [message.text, message.type]);
+
   // Fetch tools dari API saat komponen mount
   useEffect(() => {
     const fetchTools = async () => {
@@ -87,6 +97,15 @@ const Tools = () => {
   // Fungsi untuk mengedit tool yang dipilih
   const handleEditTool = async () => {
     const { id, name, category, description, installation_command } = toolToAdd;
+
+    if (!id) {
+      setMessage({ type: "error", text: "Please select a tool to update." });
+      return;
+    }
+
+    setLoading(true);
+    setMessage({ type: "", text: "" });
+
     try {
       const response = await axiosInstance.put(`/tools/${id}`, {
         name,
@@ -94,9 +113,11 @@ const Tools = () => {
         description,
         installation_command,
       });
+
       const updatedTools = tools.map((tool) =>
         tool.id === id ? response.data.data : tool
       );
+
       setTools(updatedTools);
       setToolToAdd({
         id: null,
@@ -106,29 +127,46 @@ const Tools = () => {
         installation_command: "",
       });
       setModalOpen(false);
-      alert("Tool updated successfully.");
+      setMessage({
+        type: "success",
+        text: response.data.message || "Tool updated successfully.",
+      });
     } catch (error) {
-      if (error.response && error.response.status === 422) {
-        const errors = Object.values(error.response.data.errors)
-          .flat()
-          .join("\n");
-        alert("Validation Errors:\n" + errors);
-      } else {
-        alert("Failed to update tool.");
-      }
+      const validationErrors = error.response?.data?.errors
+        ? Object.values(error.response.data.errors).flat().join(" \n")
+        : "";
+
+      setMessage({
+        type: "error",
+        text: validationErrors
+          ? `Validation errors: ${validationErrors}`
+          : error.response?.data?.message || "Failed to update tool.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   // Fungsi untuk menghapus tool
   const handleDeleteTool = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this tool?")) return;
+    const confirmed = window.confirm("Are you sure you want to delete this tool?");
+    if (!confirmed) return;
+
+    setLoading(true);
+    setMessage({ type: "", text: "" });
+
     try {
       await axiosInstance.delete(`/tools/${id}`);
       const updatedTools = tools.filter((tool) => tool.id !== id);
       setTools(updatedTools);
-      alert("Tool deleted successfully.");
+      setMessage({ type: "success", text: "Tool deleted successfully." });
     } catch (error) {
-      alert("Failed to delete tool.");
+      setMessage({
+        type: "error",
+        text: error.response?.data?.message || "Failed to delete tool.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
