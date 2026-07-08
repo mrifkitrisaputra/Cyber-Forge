@@ -34,7 +34,7 @@ const Login = () => {
         localStorage.setItem("token", token); // Or use a more secure method
         alert("Login successful!");
         setIsAuthenticated(true);
-        navigate("/google-dorking"); // Redirect to the home page or dashboard
+        navigate("/home"); // Redirect to the home page or dashboard
       } else {
         setError("Login failed: Token not received.");
       }
