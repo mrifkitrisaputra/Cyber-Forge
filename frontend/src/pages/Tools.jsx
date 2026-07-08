@@ -71,7 +71,7 @@ const Tools = () => {
       });
       setMessage({
         type: "success",
-        text: `Tool "${name}" added successfully. Installation step was skipped and recorded as completed for this session.`,
+        text: `Tool "${name}" added successfully.`,
       });
     } catch (error) {
       console.error("Error adding tool:", error);

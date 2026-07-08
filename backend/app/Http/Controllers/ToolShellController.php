@@ -14,15 +14,27 @@ class ToolShellController extends Controller
         return config('terminal.execution_mode') === 'host';
     }
 
+    protected function normalizeWorkingDirectory(?string $workingDirectory): ?string
+    {
+        $normalized = trim((string) $workingDirectory);
+
+        if ($normalized === '' || $normalized === '~' || $normalized === '$HOME') {
+            return null;
+        }
+
+        return $normalized;
+    }
+
     protected function buildHostCommand(string $command, ?string $workingDirectory = null): string
     {
         $nsenterPath = escapeshellarg((string) config('terminal.host_nsenter_path', '/usr/bin/nsenter'));
         $hostPid = (int) config('terminal.host_pid', 1);
         $hostShell = escapeshellarg((string) config('terminal.host_shell', '/bin/bash'));
         $script = '';
+        $normalizedWorkingDirectory = $this->normalizeWorkingDirectory($workingDirectory);
 
-        if (!empty($workingDirectory)) {
-            $script .= 'cd ' . escapeshellarg($workingDirectory) . ' || exit 1; ';
+        if (!empty($normalizedWorkingDirectory)) {
+            $script .= 'cd ' . escapeshellarg($normalizedWorkingDirectory) . ' || exit 1; ';
         }
 
         $script .= $command . '; command_exit=$?; printf "\\n' . self::WORKING_DIR_MARKER . '%s\\n" "$PWD"; exit $command_exit';
@@ -66,7 +78,7 @@ class ToolShellController extends Controller
         ]);
 
         $command = trim($request->input('command'));
-        $workingDirectory = trim((string) $request->input('cwd', ''));
+        $workingDirectory = $this->normalizeWorkingDirectory($request->input('cwd'));
 
         if (empty($command)) {
             return response()->json(['output' => 'Command kosong']);
@@ -76,9 +88,9 @@ class ToolShellController extends Controller
             $output = [];
             $exitCode = 0;
 
-            $this->runSystemCommand($command, $output, $exitCode, $workingDirectory !== '' ? $workingDirectory : null);
+            $this->runSystemCommand($command, $output, $exitCode, $workingDirectory);
             $rawOutput = trim(implode("\n", $output));
-            $resolvedWorkingDirectory = $workingDirectory !== '' ? $workingDirectory : null;
+            $resolvedWorkingDirectory = $workingDirectory;
 
             if ($rawOutput !== '') {
                 $lines = preg_split('/\r\n|\r|\n/', $rawOutput) ?: [];
@@ -120,7 +132,7 @@ class ToolShellController extends Controller
             return response()->json([
                 'success' => false,
                 'executed_on' => $this->isHostMode() ? 'host' : (PHP_OS_FAMILY === 'Windows' ? 'wsl' : 'local'),
-                'working_directory' => $workingDirectory !== '' ? $workingDirectory : null,
+                'working_directory' => $workingDirectory,
                 'output' => "Terjadi kesalahan: " . $e->getMessage()
             ], 500);
         }

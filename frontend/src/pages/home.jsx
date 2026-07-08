@@ -208,8 +208,8 @@ Saat mode restricted aktif, hanya command yang diawali nama tool terinstall yang
       const tabIndex = updatedTabs.findIndex((tab) => tab.id === activeTab);
       const currentTab = updatedTabs[tabIndex];
       const currentMode = currentTab.mode || "free";
-      const currentDisplayDirectory = currentTab.cwd || "~";
-      const currentExecutionDirectory = currentTab.cwd || "";
+      const currentDisplayDirectory = currentTab.cwd && currentTab.cwd !== "~" ? currentTab.cwd : "~";
+      const currentExecutionDirectory = currentTab.cwd && currentTab.cwd !== "~" ? currentTab.cwd : "";
 
       // Simpan ke history
       updatedTabs[tabIndex] = {
@@ -402,22 +402,15 @@ Lanjutkan flow berikut:
                   cwd: currentDisplayDirectory,
                 });
               } else {
-                updatedTabs[tabIndex].commands.push({
-                  command: commandText,
-                  output: "Menjalankan command tool di VPS host...",
-                  cwd: currentDisplayDirectory,
-                });
-                setTabs([...updatedTabs]);
-
                 try {
                   const res = await axiosInstance.post("/run-command", {
                     command: commandText,
                     cwd: currentExecutionDirectory,
                   });
 
-                  const resolvedWorkingDirectory = res.data.working_directory || currentExecutionDirectory || currentDisplayDirectory;
+                  const resolvedWorkingDirectory = (res.data.working_directory && res.data.working_directory !== "~" ? res.data.working_directory : "") || currentExecutionDirectory || currentDisplayDirectory;
 
-                  updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
+                  updatedTabs[tabIndex].commands.push({
                     command: commandText,
                     output: [
                       `Executed on: ${res.data.executed_on || "unknown"}`,
@@ -425,15 +418,15 @@ Lanjutkan flow berikut:
                       res.data.output || "Tidak ada output.",
                     ].join("\n"),
                     cwd: resolvedWorkingDirectory,
-                  };
+                  });
                   updatedTabs[tabIndex].cwd = resolvedWorkingDirectory;
                 } catch (err) {
-                  const resolvedWorkingDirectory = err.response?.data?.working_directory || currentExecutionDirectory || currentDisplayDirectory;
-                  updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
+                  const resolvedWorkingDirectory = (err.response?.data?.working_directory && err.response?.data?.working_directory !== "~" ? err.response?.data?.working_directory : "") || currentExecutionDirectory || currentDisplayDirectory;
+                  updatedTabs[tabIndex].commands.push({
                     command: commandText,
                     output: err.response?.data?.output || "Gagal menjalankan perintah.",
                     cwd: resolvedWorkingDirectory,
-                  };
+                  });
                   updatedTabs[tabIndex].cwd = resolvedWorkingDirectory;
                 }
               }
@@ -445,22 +438,15 @@ Lanjutkan flow berikut:
               });
             }
           } else {
-            updatedTabs[tabIndex].commands.push({
-              command: commandText,
-              output: "Menjalankan command di VPS host...",
-              cwd: currentDisplayDirectory,
-            });
-            setTabs([...updatedTabs]);
-
             try {
               const res = await axiosInstance.post("/run-command", {
                 command: commandText,
                 cwd: currentExecutionDirectory,
               });
 
-              const resolvedWorkingDirectory = res.data.working_directory || currentExecutionDirectory || currentDisplayDirectory;
+              const resolvedWorkingDirectory = (res.data.working_directory && res.data.working_directory !== "~" ? res.data.working_directory : "") || currentExecutionDirectory || currentDisplayDirectory;
 
-              updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
+              updatedTabs[tabIndex].commands.push({
                 command: commandText,
                 output: [
                   `Executed on: ${res.data.executed_on || "unknown"}`,
@@ -468,15 +454,15 @@ Lanjutkan flow berikut:
                   res.data.output || "Tidak ada output.",
                 ].join("\n"),
                 cwd: resolvedWorkingDirectory,
-              };
+              });
               updatedTabs[tabIndex].cwd = resolvedWorkingDirectory;
             } catch (err) {
-              const resolvedWorkingDirectory = err.response?.data?.working_directory || currentExecutionDirectory || currentDisplayDirectory;
-              updatedTabs[tabIndex].commands[updatedTabs[tabIndex].commands.length - 1] = {
+              const resolvedWorkingDirectory = (err.response?.data?.working_directory && err.response?.data?.working_directory !== "~" ? err.response?.data?.working_directory : "") || currentExecutionDirectory || currentDisplayDirectory;
+              updatedTabs[tabIndex].commands.push({
                 command: commandText,
                 output: err.response?.data?.output || "Gagal menjalankan perintah.",
                 cwd: resolvedWorkingDirectory,
-              };
+              });
               updatedTabs[tabIndex].cwd = resolvedWorkingDirectory;
             }
           }
