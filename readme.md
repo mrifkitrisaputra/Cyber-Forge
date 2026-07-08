@@ -65,7 +65,7 @@ docker compose exec backend php artisan db:seed
 ## Notes
 
 - The terminal supports free mode for shell-style commands and restricted mode for installed tools only.
-- The Tools page is designed for adding tools as registered entries without forcing a real shell install during normal use.
+- Tool registration and management are available directly from the Tools page.
 
 ## License
 
